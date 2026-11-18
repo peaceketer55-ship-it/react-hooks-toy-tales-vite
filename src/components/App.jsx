@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from "react";
-
 import Header from "./Header";
 import ToyForm from "./ToyForm";
 import ToyContainer from "./ToyContainer";
@@ -17,7 +16,7 @@ function App() {
   }, []);
 
   function handleClick() {
-    setShowForm((showForm) => !showForm);
+    setShowForm((previous) => !previous);
   }
 
   function handleAddToy(newToy) {
@@ -35,6 +34,46 @@ function App() {
       .catch((error) => console.error("Error adding toy:", error));
   }
 
+  function handleDeleteToy(id) {
+    fetch(`http://localhost:3002/toys/${id}`, {
+      method: "DELETE",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to delete toy");
+        }
+
+        setToys((currentToys) =>
+          currentToys.filter((toy) => toy.id !== id)
+        );
+      })
+      .catch((error) => console.error("Error deleting toy:", error));
+  }
+
+  function handleLikeToy(id) {
+    const toy = toys.find((item) => item.id === id);
+
+    if (!toy) return;
+
+    const updatedLikes = toy.likes + 1;
+
+    setToys((currentToys) =>
+      currentToys.map((item) =>
+        item.id === id
+          ? { ...item, likes: updatedLikes }
+          : item
+      )
+    );
+
+    fetch(`http://localhost:3002/toys/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ likes: updatedLikes }),
+    }).catch((error) => console.error("Error liking toy:", error));
+  }
+
   return (
     <>
       <Header />
@@ -45,7 +84,11 @@ function App() {
         <button onClick={handleClick}>Add a Toy</button>
       </div>
 
-      <ToyContainer toys={toys} />
+      <ToyContainer
+        toys={toys}
+        onDeleteToy={handleDeleteToy}
+        onLikeToy={handleLikeToy}
+      />
     </>
   );
 }
